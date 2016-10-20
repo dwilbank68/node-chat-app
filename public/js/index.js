@@ -7,18 +7,26 @@ socket
         console.log('disconnected from server');
     })
     .on('newMessage', function (msg) {
-        console.log('new msg', msg);
-        var $li = $('<li></li>');
-        $li.text(`${msg.from}: ${msg.text}`);
-        $('#messages').append($li);
+        var formattedTime = moment(msg.createdAt).format('h:mm a');
+        var $source = $('#message-template').html();
+        var template = Handlebars.compile($source);
+        var html = template({
+            text: msg.text,
+            from: msg.from,
+            createdAt: formattedTime
+        })
+        $('#messages').append(html);
     })
-    .on('newLocationMessage', function(locMsg){
-        var $li = $('<li></li>');
-        var $a = $('<a target="_blank">My current location</a>');
-        $li.text(`${locMsg.from}: `);
-        $a.attr('href', locMsg.url);
-        $li.append($a);
-        $('#messages').append($li);
+    .on('newLocationMessage', function(msg){
+        var formattedTime = moment(msg.createdAt).format('h:mm a');
+        var $source = $('#location-message-template').html();
+        var template = Handlebars.compile($source);
+        var html = template({
+            url: msg.url,
+            from: msg.from,
+            createdAt: formattedTime
+        })
+        $('#messages').append(html);
     })
 
 $('#message-form')
