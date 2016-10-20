@@ -1,10 +1,15 @@
-const port = process.env.PORT || 3000;
-
 const path = require("path");
+const http = require("http");
 const express = require("express");
+const socketIO = require('socket.io');
 
+const {generateMessage} = require('./utils/message');
+
+const publicPath = path.join(__dirname, '../public')
+const port = process.env.PORT || 3000;
 var app = express();
-
+var server = http.createServer(app);
+var io = socketIO(server);
 // const hbs = require("hbs");
 // hbs.registerPartials(__dirname + '/views/partials');
 // app.set('view engine', 'hbs');
@@ -12,8 +17,36 @@ var app = express();
 // app.use((req, res, next)=> {
 //     res.render('maintenance.hbs');
 // })
-const publicPath = path.join(__dirname, '../public')
 app.use(express.static(publicPath));
+
+io.on('connection',(socket) => {
+    console.log('new connection');
+
+    socket
+        .emit(
+            'newMessage',
+            generateMessage('Admin','Welcome To The App')
+        )
+        .broadcast.emit(
+            'newMessage',
+            generateMessage('Admin', 'New User Joined The Chat')
+        )
+
+    socket
+        .on('disconnect', () => {
+            console.log('user disconnected from server');
+        })
+        .on('createMessage', (newMsg, ack) => {
+            console.log('createMessage', newMsg);
+            io.emit(
+                'newMessage',
+                generateMessage(newMsg.from, newMsg.text)
+            );
+            ack('this is from server');
+        })
+
+
+})
 
 // const fs = require("fs");
 // app.use((req, res, next)=> {
@@ -46,6 +79,7 @@ app.use(express.static(publicPath));
 //     })
 // })
 
-app.listen(port, ()=>{
+server.listen(port, ()=>{
     console.log('running on port ' + port);
 })
+
