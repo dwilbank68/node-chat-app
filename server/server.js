@@ -5,37 +5,49 @@ const socketIO = require('socket.io');
 
 const {generateMessage,
     generateLocationMessage} = require('./utils/message');
+const {isRealString} = require('./utils/validation');
+const {Users} = require("./utils/users");
 
 const publicPath = path.join(__dirname, '../public')
 const port = process.env.PORT || 3000;
 var app = express();
 var server = http.createServer(app);
 var io = socketIO(server);
-// const hbs = require("hbs");
-// hbs.registerPartials(__dirname + '/views/partials');
-// app.set('view engine', 'hbs');
+var users = new Users();
 
-// app.use((req, res, next)=> {
-//     res.render('maintenance.hbs');
-// })
 app.use(express.static(publicPath));
 
 io.on('connection',(socket) => {
     console.log('new connection');
 
     socket
-        .emit(
-            'newMessage',
-            generateMessage('Admin','Welcome To The App')
-        )
-        .broadcast.emit(
-            'newMessage',
-            generateMessage('Admin', 'New User Joined The Chat')
-        )
+        .on('join', (params, callback) => {
+            if (!isRealString(params.name) || !isRealString(params.room)) {
+                return callback('Name and room name are required');
+            }
+            socket.name=params.name;
+            console.log('socket.name',socket.name);
+            
+            socket
+                .join(params.room, () => {
+                    users.removeUser(socket.id);
+                    users.addUser(socket.id, params.name, params.room);
+                    io
+                        .to(params.room)
+                        .emit('updateUserList', users.getUserList(params.room));
+                })
+                .emit(
+                    'newMessage',
+                    generateMessage('Admin','Welcome To The App')
+                )
+                .broadcast
+                .to(params.room)
+                .emit(
+                    'newMessage',
+                    generateMessage('Admin', `${params.name} has joined`)
+                )
 
-    socket
-        .on('disconnect', () => {
-            console.log('user disconnected from server');
+            callback();
         })
         .on('createMessage', (newMsg, ack) => {
             console.log('createMessage', newMsg);
@@ -53,40 +65,22 @@ io.on('connection',(socket) => {
                 )
             }
         )
-
+        .on('disconnect', () => {
+            var user = users.removeUser(socket.id);
+            if (user) {
+                io
+                    .to(user.room)
+                    .emit('updateUserList', users.getUserList(user.room))
+                    .emit(
+                        'newMessage',
+                        generateMessage('Admin', `${user.name} has left`)
+                    );
+            }
+            console.log('user disconnected from server');
+        })
 
 })
 
-// const fs = require("fs");
-// app.use((req, res, next)=> {
-//     var now = new Date().toString();
-//     var log = `${now}: ${req.method} ${req.url}`;
-//     console.log(log);
-//     fs.appendFile('server.log', log +'\n');
-//     next();
-// })
-//
-//
-// hbs.registerHelper('getCurrentYear', ()=>{
-//     return new Date().getFullYear();
-// });
-//
-// hbs.registerHelper('upperCase', (text)=>{
-//     return text.toUpperCase();
-// });
-
-// app.get('/',(req,res)=>{
-//     res.render('home.hbs', {
-//         pageTitle: 'Home Page',
-//         welcomeMessage: 'Welcome to'
-//     });
-// })
-//
-// app.get('/about', (req, res)=> {
-//     res.render('about.hbs', {
-//         pageTitle: 'asdfsd'
-//     })
-// })
 
 server.listen(port, ()=>{
     console.log('running on port ' + port);
