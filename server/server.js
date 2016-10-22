@@ -32,9 +32,10 @@ io.on('connection',(socket) => {
                 .join(params.room, () => {
                     users.removeUser(socket.id);
                     users.addUser(socket.id, params.name, params.room);
-                    io
-                        .to(params.room)
-                        .emit('updateUserList', users.getUserList(params.room));
+                    io.to(params.room).emit(
+                        'updateUserList',
+                        users.getUserList(params.room)
+                    );
                 })
                 .emit(
                     'newMessage',
@@ -69,15 +70,14 @@ io.on('connection',(socket) => {
         .on('disconnect', () => {
             var user = users.removeUser(socket.id);
             if (user) {
-                io
-                    .to(user.room).emit(
-                        'updateUserList',
-                        users.getUserList(user.room)
-                    )
-                    .emit(
-                        'newMessage',
-                        generateMessage('Admin', `${user.name} has left`)
-                    );
+                io.to(user.room).emit(
+                    'updateUserList',
+                    users.getUserList(user.room)
+                )
+                .emit(
+                    'newMessage',
+                    generateMessage('Admin', `${user.name} has left`)
+                );
             }
             console.log('user disconnected from server');
         })
