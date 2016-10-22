@@ -40,9 +40,7 @@ io.on('connection',(socket) => {
                     'newMessage',
                     generateMessage('Admin','Welcome To The App')
                 )
-                .broadcast
-                .to(params.room)
-                .emit(
+                .broadcast.to(params.room).emit(
                     'newMessage',
                     generateMessage('Admin', `${params.name} has joined`)
                 )
@@ -72,8 +70,10 @@ io.on('connection',(socket) => {
             var user = users.removeUser(socket.id);
             if (user) {
                 io
-                    .to(user.room)
-                    .emit('updateUserList', users.getUserList(user.room))
+                    .to(user.room).emit(
+                        'updateUserList',
+                        users.getUserList(user.room)
+                    )
                     .emit(
                         'newMessage',
                         generateMessage('Admin', `${user.name} has left`)

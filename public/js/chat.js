@@ -100,12 +100,11 @@ $locationButton
                         .removeAttr('disabled')
                         .text('Send location...');
 
-                    socket
-                        .emit(
-                            'createLocationMessage',
-                            { latitude: position.coords.latitude,
-                            longitude: position.coords.longitude }
-                        );
+                    socket.emit(
+                        'createLocationMessage',
+                        { latitude: position.coords.latitude,
+                        longitude: position.coords.longitude }
+                    );
                 },
                 function () {
                     $locationButton
