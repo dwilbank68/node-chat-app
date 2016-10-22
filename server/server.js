@@ -50,21 +50,24 @@ io.on('connection',(socket) => {
             callback();
         })
         .on('createMessage', (newMsg, ack) => {
-            console.log('createMessage', newMsg);
-            io.emit(
-                'newMessage',
-                generateMessage(newMsg.from, newMsg.text)
-            );
+            var user = users.getUser(socket.id);
+            if (user && isRealString(newMsg.text)) {
+                io.to(user.room).emit(
+                    'newMessage',
+                    generateMessage(user.name, newMsg.text)
+                );
+            }
             ack();
         })
-        .on('createLocationMessage',
-            (coords) => {
-                io.emit(
+        .on('createLocationMessage', (coords) => {
+            var user = users.getUser(socket.id);
+            if (user) {
+                io.to(user.room).emit(
                     'newLocationMessage',
-                    generateLocationMessage('Admin', coords)
+                    generateLocationMessage(user.name, coords)
                 )
             }
-        )
+        })
         .on('disconnect', () => {
             var user = users.removeUser(socket.id);
             if (user) {
